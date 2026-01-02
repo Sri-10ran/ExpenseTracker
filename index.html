@@ -1,0 +1,1503 @@
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Personal Expense Engine</title>
+<link rel="manifest" href="manifest.json">
+
+<script>
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("service-worker.js");
+}
+</script>
+
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Space Grotesk', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      color: #e2e8f0;
+      min-height: 100vh;
+      padding-bottom: 20px;
+      overflow-x: hidden;
+    }
+
+    .preloader {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+      transition: opacity 0.5s ease;
+    }
+
+    .preloader.hide {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 4px solid #334155;
+      border-top: 4px solid #00d084;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .preloader-text {
+      margin-top: 20px;
+      font-size: 18px;
+      font-weight: 600;
+      color: #00d084;
+    }
+
+    .onboarding-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.95);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 9998;
+      padding: 20px;
+    }
+
+    .onboarding-modal.hide {
+      display: none;
+    }
+
+    .onboarding-content {
+      background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+      border-radius: 25px;
+      padding: 30px;
+      max-width: 400px;
+      width: 100%;
+      box-shadow: 0 20px 60px rgba(0, 208, 132, 0.3);
+      animation: slideUp 0.5s ease;
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(50px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .onboarding-title {
+      font-size: 24px;
+      font-weight: 700;
+      color: #00d084;
+      text-align: center;
+      margin-bottom: 25px;
+    }
+
+    .onboarding-input {
+      width: 100%;
+      background: #0f172a;
+      border: 2px solid #475569;
+      color: #e2e8f0;
+      border-radius: 15px;
+      padding: 15px;
+      font-size: 16px;
+      font-weight: 500;
+      margin-bottom: 15px;
+      transition: all 0.3s ease;
+    }
+
+    .onboarding-input:focus {
+      outline: none;
+      border-color: #00d084;
+      box-shadow: 0 0 0 3px rgba(0, 208, 132, 0.2);
+    }
+
+    .onboarding-btn {
+      width: 100%;
+      background: linear-gradient(135deg, #00d084 0%, #00a86b 100%);
+      border: none;
+      color: white;
+      padding: 15px;
+      border-radius: 15px;
+      font-weight: 600;
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(0, 208, 132, 0.3);
+    }
+
+    .onboarding-btn:active {
+      transform: scale(0.98);
+    }
+
+    .onboarding-label {
+      font-size: 14px;
+      color: #94a3b8;
+      margin-bottom: 8px;
+      display: block;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #00d084 0%, #00a86b 100%);
+      padding: 20px;
+      box-shadow: 0 4px 15px rgba(0, 208, 132, 0.3);
+    }
+
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 5px;
+    }
+
+    .user-name {
+      font-size: 20px;
+      font-weight: 700;
+      color: white;
+    }
+
+    .current-date {
+      font-size: 12px;
+      font-weight: 500;
+      color: rgba(255, 255, 255, 0.8);
+    }
+
+    .balance-section {
+      margin-top: 10px;
+    }
+
+    .balance-label {
+      font-size: 12px;
+      font-weight: 500;
+      color: rgba(255, 255, 255, 0.8);
+      margin-bottom: 3px;
+    }
+
+    .balance-amount {
+      font-size: 32px;
+      font-weight: 700;
+      color: white;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 10px;
+      padding: 15px;
+      background: #0f172a;
+    }
+
+    .action-btn {
+      flex: 1;
+      padding: 15px;
+      border-radius: 15px;
+      border: none;
+      font-weight: 600;
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .credit-btn {
+      background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+      color: white;
+      box-shadow: 0 4px 15px rgba(34, 197, 94, 0.3);
+    }
+
+    .debit-btn {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      color: white;
+      box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+    }
+
+    .action-btn:active {
+      transform: scale(0.98);
+    }
+
+    .input-modal {
+      position: fixed;
+      bottom: -100%;
+      left: 0;
+      width: 100%;
+      background: #1e293b;
+      border-radius: 25px 25px 0 0;
+      padding: 25px;
+      box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.5);
+      transition: bottom 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 1000;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+
+    .input-modal.show {
+      bottom: 0;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .modal-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: #e2e8f0;
+    }
+
+    .close-btn {
+      background: #334155;
+      border: none;
+      color: #e2e8f0;
+      width: 35px;
+      height: 35px;
+      border-radius: 50%;
+      font-size: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-input, .modal-select {
+      width: 100%;
+      background: #0f172a;
+      border: 2px solid #475569;
+      color: #e2e8f0;
+      border-radius: 12px;
+      padding: 15px;
+      font-size: 16px;
+      font-weight: 500;
+      margin-bottom: 15px;
+    }
+
+    .modal-input:focus, .modal-select:focus {
+      outline: none;
+      border-color: #00d084;
+      box-shadow: 0 0 0 3px rgba(0, 208, 132, 0.2);
+    }
+
+    .modal-label {
+      font-size: 14px;
+      color: #94a3b8;
+      margin-bottom: 8px;
+      display: block;
+    }
+
+    .submit-btn {
+      width: 100%;
+      background: linear-gradient(135deg, #00d084 0%, #00a86b 100%);
+      border: none;
+      color: white;
+      padding: 15px;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 16px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    .submit-btn:active {
+      transform: scale(0.98);
+    }
+
+    .tabs {
+      display: flex;
+      padding: 15px;
+      background: #0f172a;
+      gap: 10px;
+    }
+
+    .tab {
+      flex: 1;
+      padding: 12px;
+      text-align: center;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-weight: 600;
+      font-size: 14px;
+      background: #1e293b;
+      color: #94a3b8;
+    }
+
+    .tab.active {
+      background: linear-gradient(135deg, #00d084 0%, #00a86b 100%);
+      color: white;
+      box-shadow: 0 4px 10px rgba(0, 208, 132, 0.3);
+    }
+
+    .view-selector {
+      padding: 15px;
+      background: #0f172a;
+    }
+
+    .view-selector select {
+      width: 100%;
+      background: #1e293b;
+      border: 2px solid #475569;
+      color: #e2e8f0;
+      border-radius: 12px;
+      padding: 12px;
+      font-size: 15px;
+      font-weight: 500;
+    }
+
+    .chart-container {
+      background: #1e293b;
+      margin: 15px;
+      border-radius: 20px;
+      padding: 20px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .chart-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #e2e8f0;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    .stats-row {
+      display: flex;
+      justify-content: space-around;
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 2px solid #334155;
+    }
+
+    .stat-item {
+      text-align: center;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: #94a3b8;
+      margin-bottom: 5px;
+    }
+
+    .stat-value {
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .credit-amount {
+      color: #22c55e;
+    }
+
+    .debit-amount {
+      color: #ef4444;
+    }
+
+    .source-breakdown {
+      margin: 15px;
+      background: #1e293b;
+      border-radius: 20px;
+      padding: 20px;
+    }
+
+    .breakdown-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #e2e8f0;
+      margin-bottom: 15px;
+    }
+
+    .source-item {
+      background: #334155;
+      border-radius: 12px;
+      padding: 15px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .source-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: #e2e8f0;
+    }
+
+    .source-amount {
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .search-filter-section {
+      padding: 15px;
+      background: #0f172a;
+    }
+
+    .search-bar {
+      width: 100%;
+      background: #1e293b;
+      border: 2px solid #475569;
+      color: #e2e8f0;
+      border-radius: 12px;
+      padding: 12px 15px;
+      font-size: 15px;
+      font-weight: 500;
+      margin-bottom: 10px;
+    }
+
+    .search-bar:focus {
+      outline: none;
+      border-color: #00d084;
+      box-shadow: 0 0 0 3px rgba(0, 208, 132, 0.2);
+    }
+
+    .filter-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .filter-select {
+      flex: 1;
+      background: #1e293b;
+      border: 2px solid #475569;
+      color: #e2e8f0;
+      border-radius: 12px;
+      padding: 10px;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .filter-btn {
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      border: none;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .filter-btn:active {
+      transform: scale(0.98);
+    }
+
+    .export-btn {
+      width: 100%;
+      background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+      border: none;
+      color: white;
+      padding: 12px;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    .transaction-list {
+      padding: 15px;
+    }
+
+    .week-section {
+      background: #1e293b;
+      border-radius: 15px;
+      padding: 15px;
+      margin-bottom: 15px;
+    }
+
+    .week-header {
+      font-size: 16px;
+      font-weight: 600;
+      color: #00d084;
+      margin-bottom: 12px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #334155;
+    }
+
+    .transaction-item {
+      background: #334155;
+      border-radius: 12px;
+      padding: 15px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .transaction-details {
+      flex: 1;
+    }
+
+    .transaction-type {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 8px;
+      margin-bottom: 5px;
+      display: inline-block;
+    }
+
+    .credit-badge {
+      background: rgba(34, 197, 94, 0.2);
+      color: #22c55e;
+    }
+
+    .debit-badge {
+      background: rgba(239, 68, 68, 0.2);
+      color: #ef4444;
+    }
+
+    .transaction-note {
+      font-size: 14px;
+      font-weight: 500;
+      color: #e2e8f0;
+      margin-bottom: 3px;
+    }
+
+    .transaction-source {
+      font-size: 12px;
+      color: #94a3b8;
+    }
+
+    .transaction-amount {
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: #64748b;
+    }
+
+    .empty-icon {
+      font-size: 48px;
+      margin-bottom: 15px;
+    }
+
+    .storage-info {
+      background: #1e293b;
+      border-radius: 15px;
+      padding: 15px;
+      margin: 15px;
+      text-align: center;
+      font-size: 11px;
+      color: #94a3b8;
+    }
+
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 999;
+      display: none;
+    }
+
+    .modal-overlay.show {
+      display: block;
+    }
+
+    select option {
+      background: #1e293b;
+      color: #e2e8f0;
+    }
+
+    .source-type-selector {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+
+    .source-type-btn {
+      flex: 1;
+      padding: 10px;
+      border-radius: 10px;
+      border: 2px solid #475569;
+      background: #0f172a;
+      color: #94a3b8;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .source-type-btn.active {
+      border-color: #00d084;
+      background: rgba(0, 208, 132, 0.1);
+      color: #00d084;
+    }
+
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="preloader" id="preloader">
+    <div class="spinner"></div>
+    <div class="preloader-text">Loading...</div>
+  </div>
+
+  <div class="onboarding-modal hide" id="onboardingModal">
+    <div class="onboarding-content">
+      <div class="onboarding-title">Welcome! 👋</div>
+      <div id="nameStep">
+        <label class="onboarding-label">What's your first name?</label>
+        <input type="text" class="onboarding-input" id="nameInput" placeholder="Enter your name">
+        <button class="onboarding-btn" onclick="submitName()">Continue</button>
+      </div>
+      <div id="balanceStep" style="display: none;">
+        <label class="onboarding-label">What's your current balance?</label>
+        <input type="number" step="0.01" class="onboarding-input" id="balanceInput" placeholder="₹0.00">
+        <button class="onboarding-btn" onclick="submitBalance()">Continue</button>
+      </div>
+      <div id="savingAimStep" style="display: none;">
+        <label class="onboarding-label">How much do you plan to save by the end of this month?</label>
+        <input type="number" step="0.01" class="onboarding-input" id="savingAimInput" placeholder="₹0.00">
+        <button class="onboarding-btn" onclick="submitSavingAim()">Get Started</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="header">
+    <div class="header-top">
+      <div class="user-name" id="userName">Hi, User!</div>
+      <div class="current-date" id="currentDate"></div>
+    </div>
+    <div class="balance-section">
+      <div class="balance-label">Current Balance</div>
+      <div class="balance-amount" id="currentBalance">₹0.00</div>
+    </div>
+  </div>
+
+  <div class="action-buttons">
+    <button class="action-btn credit-btn" onclick="openCreditModal()">
+      <span>➕</span> Add Credit
+    </button>
+    <button class="action-btn debit-btn" onclick="openDebitModal()">
+      <span>➖</span> Add Debit
+    </button>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('insights')">Insights</div>
+    <div class="tab" onclick="switchTab('transactions')">Transactions</div>
+  </div>
+
+  <div id="insightsView">
+    <div class="view-selector">
+      <select id="viewType" onchange="updateInsights()">
+        <option value="day">Today</option>
+        <option value="week">This Week</option>
+        <option value="month">This Month</option>
+      </select>
+    </div>
+
+    <div class="chart-container">
+      <div class="chart-title" id="chartTitle">Today's Overview</div>
+      <canvas id="pieChart"></canvas>
+      <div class="stats-row">
+        <div class="stat-item">
+          <div class="stat-label">Total Credit</div>
+          <div class="stat-value credit-amount" id="creditStat">₹0</div>
+          <div class="stat-label" id="creditPercent">0%</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">Total Debit</div>
+          <div class="stat-value debit-amount" id="debitStat">₹0</div>
+          <div class="stat-label" id="debitPercent">0%</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="source-breakdown" id="sourceBreakdown"></div>
+  </div>
+
+  <div id="transactionsView" style="display: none;">
+    <div class="search-filter-section">
+      <input type="text" class="search-bar" id="searchBar" placeholder="🔍 Search by note or source..." onkeyup="applyFilters()">
+      
+      <div class="filter-row">
+        <select class="filter-select" id="filterSource" onchange="applyFilters()">
+          <option value="">All Sources</option>
+        </select>
+        <button class="filter-btn" onclick="toggleDateFilter()">📅 Date</button>
+      </div>
+
+      <div id="dateFilterRow" class="filter-row" style="display: none;">
+        <input type="date" class="filter-select" id="filterDateFrom" onchange="applyFilters()">
+        <input type="date" class="filter-select" id="filterDateTo" onchange="applyFilters()">
+      </div>
+
+      <button class="export-btn" onclick="exportFilteredData()">📊 Export Filtered Data</button>
+    </div>
+
+    <div class="transaction-list" id="transactionsList"></div>
+  </div>
+
+  <div class="storage-info" id="storageInfo">Calculating storage...</div>
+
+  <div class="modal-overlay" id="modalOverlay" onclick="closeModals()"></div>
+
+  <div class="input-modal" id="creditModal">
+    <div class="modal-header">
+      <div class="modal-title">Add Credit</div>
+      <button class="close-btn" onclick="closeModals()">✕</button>
+    </div>
+    
+    <label class="modal-label">Credit Source Type</label>
+    <div class="source-type-selector">
+      <button class="source-type-btn active" id="existingSourceBtn" onclick="selectSourceType('existing')">
+        Existing Source
+      </button>
+      <button class="source-type-btn" id="newSourceBtn" onclick="selectSourceType('new')">
+        New Source
+      </button>
+    </div>
+
+    <div id="existingSourceSection">
+      <label class="modal-label">Select Existing Source</label>
+      <select class="modal-select" id="existingCreditSource">
+        <option value="">Choose a source</option>
+      </select>
+    </div>
+
+    <div id="newSourceSection" class="hidden">
+      <label class="modal-label">New Source Name</label>
+      <input type="text" class="modal-input" id="newCreditSource" placeholder="e.g., Dad, Mom, Salary">
+    </div>
+
+    <label class="modal-label">Amount (₹)</label>
+    <input type="number" step="0.01" class="modal-input" id="creditAmount" placeholder="0.00">
+    
+    <button class="submit-btn" onclick="submitCredit()">Add Credit</button>
+  </div>
+
+  <div class="input-modal" id="debitModal">
+    <div class="modal-header">
+      <div class="modal-title">Add Debit</div>
+      <button class="close-btn" onclick="closeModals()">✕</button>
+    </div>
+    <label class="modal-label">Amount (₹)</label>
+    <input type="number" step="0.01" class="modal-input" id="debitAmount" placeholder="0.00">
+    <label class="modal-label">From Which Source?</label>
+    <select class="modal-select" id="debitSource">
+      <option value="">Select credit source</option>
+    </select>
+    <label class="modal-label">Note (Optional)</label>
+    <input type="text" class="modal-input" id="debitNote" placeholder="What did you spend on?">
+    <button class="submit-btn" onclick="submitDebit()">Add Debit</button>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    const AppState = {
+      user: { firstName: null, balance: 0.00 },
+      credits: [],
+      transactions: [],
+      monthlyAim: {},
+      monthBuffer: [],
+      creditSources: []
+    };
+
+    let activeChart = null;
+    let currentSourceType = 'existing';
+    let filteredTransactions = [];
+
+    function toMoney(value) {
+      return Number(parseFloat(value).toFixed(2));
+    }
+
+    function updateCurrentDate() {
+      const options = { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' };
+      const dateStr = new Date().toLocaleDateString('en-IN', options);
+      document.getElementById('currentDate').textContent = dateStr;
+    }
+
+    function initApp() {
+      setTimeout(() => {
+        document.getElementById('preloader').classList.add('hide');
+        const saved = localStorage.getItem("expense_engine");
+        if (saved) {
+          Object.assign(AppState, JSON.parse(saved));
+          updateUI();
+        } else {
+          document.getElementById('onboardingModal').classList.remove('hide');
+        }
+        updateCurrentDate();
+        updateStorageInfo();
+      }, 1500);
+    }
+
+    function submitName() {
+      const name = document.getElementById('nameInput').value.trim();
+      if (!name) {
+        alert('Please enter your name');
+        return;
+      }
+      AppState.user.firstName = name;
+      document.getElementById('nameStep').style.display = 'none';
+      document.getElementById('balanceStep').style.display = 'block';
+    }
+
+    function submitBalance() {
+      const balance = document.getElementById('balanceInput').value;
+      AppState.user.balance = toMoney(balance || 0);
+      document.getElementById('balanceStep').style.display = 'none';
+      document.getElementById('savingAimStep').style.display = 'block';
+    }
+
+    function submitSavingAim() {
+      const aim = document.getElementById('savingAimInput').value;
+      const now = new Date();
+      const key = getMonthKey(now);
+      AppState.monthlyAim[key] = toMoney(aim || 0);
+      persist();
+      document.getElementById('onboardingModal').classList.add('hide');
+      updateUI();
+    }
+
+    function selectSourceType(type) {
+      currentSourceType = type;
+      
+      document.getElementById('existingSourceBtn').classList.remove('active');
+      document.getElementById('newSourceBtn').classList.remove('active');
+      
+      if (type === 'existing') {
+        document.getElementById('existingSourceBtn').classList.add('active');
+        document.getElementById('existingSourceSection').classList.remove('hidden');
+        document.getElementById('newSourceSection').classList.add('hidden');
+      } else {
+        document.getElementById('newSourceBtn').classList.add('active');
+        document.getElementById('existingSourceSection').classList.add('hidden');
+        document.getElementById('newSourceSection').classList.remove('hidden');
+      }
+    }
+
+    function openCreditModal() {
+      updateExistingCreditSources();
+      selectSourceType('existing');
+      document.getElementById('creditModal').classList.add('show');
+      document.getElementById('modalOverlay').classList.add('show');
+      document.getElementById('creditAmount').value = '';
+      document.getElementById('existingCreditSource').value = '';
+      document.getElementById('newCreditSource').value = '';
+    }
+
+    function updateExistingCreditSources() {
+      const select = document.getElementById('existingCreditSource');
+      select.innerHTML = '<option value="">Choose a source</option>';
+      
+      const uniqueSources = [...new Set(AppState.credits.map(c => c.source))];
+      uniqueSources.forEach(source => {
+        const option = document.createElement('option');
+        option.value = source;
+        option.textContent = source;
+        select.appendChild(option);
+      });
+    }
+
+    function openDebitModal() {
+      updateDebitSourceSelect();
+      document.getElementById('debitModal').classList.add('show');
+      document.getElementById('modalOverlay').classList.add('show');
+      document.getElementById('debitAmount').value = '';
+      document.getElementById('debitNote').value = '';
+    }
+
+    function closeModals() {
+      document.getElementById('creditModal').classList.remove('show');
+      document.getElementById('debitModal').classList.remove('show');
+      document.getElementById('modalOverlay').classList.remove('show');
+    }
+
+    function updateDebitSourceSelect() {
+      const select = document.getElementById('debitSource');
+      select.innerHTML = '<option value="">Select credit source</option>';
+      
+      AppState.credits
+        .filter(c => c.remaining > 0)
+        .forEach(c => {
+          const option = document.createElement('option');
+          option.value = c.source;
+          option.textContent = `${c.source} (₹${c.remaining.toFixed(2)} available)`;
+          select.appendChild(option);
+        });
+    }
+
+    function submitCredit() {
+      const amount = document.getElementById('creditAmount').value;
+      let source;
+
+      if (currentSourceType === 'existing') {
+        source = document.getElementById('existingCreditSource').value;
+      } else {
+        source = document.getElementById('newCreditSource').value.trim();
+      }
+      
+      if (!amount || !source) {
+        alert('Please fill all fields');
+        return;
+      }
+
+      addCredit(amount, source);
+      closeModals();
+    }
+
+    function submitDebit() {
+      const amount = document.getElementById('debitAmount').value;
+      const source = document.getElementById('debitSource').value;
+      const note = document.getElementById('debitNote').value.trim();
+      
+      if (!amount || !source) {
+        alert('Please fill amount and select source');
+        return;
+      }
+
+      addDebit(amount, source, note);
+      closeModals();
+    }
+
+    function addCredit(amount, source) {
+      amount = toMoney(amount);
+      
+      const existingCredit = AppState.credits.find(c => c.source === source);
+      
+      if (existingCredit) {
+        existingCredit.original += amount;
+        existingCredit.remaining += amount;
+      } else {
+        const credit = {
+          id: crypto.randomUUID(),
+          source,
+          original: amount,
+          remaining: amount,
+          createdAt: new Date().toISOString()
+        };
+        AppState.credits.push(credit);
+      }
+
+      AppState.transactions.push({
+        type: "CREDIT",
+        amount,
+        source,
+        date: new Date().toISOString()
+      });
+
+      AppState.user.balance += amount;
+      updateMonthBufferIfNeeded(new Date().toISOString());
+      persist();
+      updateUI();
+    }
+
+    function addDebit(amount, sourceName, note) {
+      amount = toMoney(amount);
+      
+      const source = AppState.credits.find(
+        c => c.source === sourceName && c.remaining >= amount
+      );
+
+      if (!source) {
+        const availableSource = AppState.credits.find(c => c.source === sourceName);
+        const availableAmount = availableSource ? availableSource.remaining : 0;
+        alert(`Insufficient balance in ${sourceName}. Available: ₹${availableAmount.toFixed(2)}`);
+        return;
+      }
+
+      source.remaining = toMoney(source.remaining - amount);
+      AppState.user.balance -= amount;
+
+      AppState.transactions.push({
+        type: "DEBIT",
+        amount,
+        from: sourceName,
+        note: note || `Debit from ${sourceName}`,
+        date: new Date().toISOString()
+      });
+
+      updateMonthBufferIfNeeded(new Date().toISOString());
+      persist();
+      updateUI();
+      postTransactionCheck();
+    }
+
+    function getMonthKey(date = new Date()) {
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    }
+
+    function updateMonthBufferIfNeeded(dateStr) {
+      const key = getMonthKey(new Date(dateStr));
+      if (!AppState.monthBuffer.includes(key)) {
+        AppState.monthBuffer.push(key);
+        if (AppState.monthBuffer.length > 2) {
+          AppState.monthBuffer.shift();
+        }
+        persist();
+      }
+    }
+
+    function persist() {
+      localStorage.setItem("expense_engine", JSON.stringify(AppState));
+      updateStorageInfo();
+    }
+
+    function updateUI() {
+      document.getElementById("userName").textContent = `Hi, ${AppState.user.firstName}!`;
+      document.getElementById("currentBalance").textContent = `₹${AppState.user.balance.toFixed(2)}`;
+      
+      updateInsights();
+      updateTransactionsList();
+      updateFilterSourceSelect();
+    }
+
+    function switchTab(tab) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      event.target.classList.add('active');
+      
+      if (tab === 'insights') {
+        document.getElementById('insightsView').style.display = 'block';
+        document.getElementById('transactionsView').style.display = 'none';
+        updateInsights();
+      } else {
+        document.getElementById('insightsView').style.display = 'none';
+        document.getElementById('transactionsView').style.display = 'block';
+        updateTransactionsList();
+      }
+    }
+
+    function updateInsights() {
+      const view = document.getElementById("viewType").value;
+      const now = new Date();
+
+      if (view === "day") {
+        const stats = getDayStats(now.toISOString());
+        renderPieChart(stats.credit, stats.debit, stats.sources, "Today");
+      } else if (view === "week") {
+        const weeks = getWeeklyStats(now.getFullYear(), now.getMonth());
+        const currentWeek = getWeekLabel(now.getDate());
+        const w = weeks[currentWeek] || { credit: 0, debit: 0, sources: {} };
+        renderPieChart(w.credit, w.debit, w.sources, currentWeek);
+      } else if (view === "month") {
+        const m = getMonthlyStats(now.getFullYear(), now.getMonth());
+        renderPieChart(m.creditTotal, m.debitTotal, m.sources, "This Month");
+      }
+    }
+
+    function renderPieChart(credit, debit, sources, label) {
+      const ctx = document.getElementById("pieChart");
+      if (activeChart) activeChart.destroy();
+
+      const sourceNames = Object.keys(sources || {});
+      const sourceValues = Object.values(sources || {}).map(v => Math.abs(v));
+      
+      const colors = ['#22c55e', '#3b82f6', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#06b6d4'];
+
+      const total = credit + debit;
+      const creditPct = total > 0 ? Math.round((credit / total) * 100) : 0;
+      const debitPct = total > 0 ? Math.round((debit / total) * 100) : 0;
+
+      activeChart = new Chart(ctx, {
+        type: "doughnut",
+        data: {
+          labels: sourceNames.length > 0 ? sourceNames : ["No Data"],
+          datasets: [{
+            data: sourceValues.length > 0 ? sourceValues : [1],
+            backgroundColor: sourceNames.length > 0 ? colors.slice(0, sourceNames.length) : ['#334155'],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: {
+            legend: { 
+              display: false
+            },
+            tooltip: {
+              backgroundColor: '#0f172a',
+              titleColor: '#e2e8f0',
+              bodyColor: '#e2e8f0',
+              borderColor: '#334155',
+              borderWidth: 1,
+              callbacks: {
+                label: function(context) {
+                  return context.label + ': ₹' + context.parsed.toFixed(2);
+                }
+              }
+            }
+          }
+        }
+      });
+
+      document.getElementById("chartTitle").textContent = label;
+      document.getElementById("creditStat").textContent = `₹${credit.toFixed(2)}`;
+      document.getElementById("debitStat").textContent = `₹${debit.toFixed(2)}`;
+      document.getElementById("creditPercent").textContent = `${creditPct}%`;
+      document.getElementById("debitPercent").textContent = `${debitPct}%`;
+
+      renderSourceBreakdown(sources);
+    }
+
+    function renderSourceBreakdown(sources) {
+      const container = document.getElementById("sourceBreakdown");
+      
+      if (!sources || Object.keys(sources).length === 0) {
+        container.style.display = 'none';
+        return;
+      }
+
+      container.style.display = 'block';
+      let html = '<div class="breakdown-title">Source Breakdown</div>';
+      
+      Object.entries(sources).forEach(([source, amount]) => {
+        html += `
+          <div class="source-item">
+            <div class="source-name">${source}</div>
+            <div class="source-amount" style="color: ${amount >= 0 ? '#22c55e' : '#ef4444'}">
+              ₹${Math.abs(amount).toFixed(2)}
+            </div>
+          </div>
+        `;
+      });
+
+      container.innerHTML = html;
+    }
+
+    function getDayStats(dateStr) {
+      const day = new Date(dateStr).toISOString().split("T")[0];
+      let credit = 0, debit = 0;
+      const sources = {};
+
+      AppState.transactions.forEach(t => {
+        if (new Date(t.date).toISOString().split("T")[0] === day) {
+          if (t.type === "CREDIT") {
+            credit += t.amount;
+            sources[t.source] = (sources[t.source] || 0) + t.amount;
+          } else {
+            debit += t.amount;
+            sources[t.from] = (sources[t.from] || 0) - t.amount;
+          }
+        }
+      });
+
+      return { date: day, credit: toMoney(credit), debit: toMoney(debit), sources };
+    }
+
+    function getWeekLabel(dayOfMonth) {
+      if (dayOfMonth <= 7) return "Week 1";
+      if (dayOfMonth <= 14) return "Week 2";
+      if (dayOfMonth <= 21) return "Week 3";
+      if (dayOfMonth <= 28) return "Week 4";
+      return "Tail Days";
+    }
+
+    function getWeeklyStats(year, monthIndex) {
+      const weekly = {};
+      
+      AppState.transactions.forEach(t => {
+        const d = new Date(t.date);
+        if (d.getFullYear() !== year || d.getMonth() !== monthIndex) return;
+
+        const label = getWeekLabel(d.getDate());
+        if (!weekly[label]) {
+          weekly[label] = { credit: 0, debit: 0, entries: [], sources: {} };
+        }
+
+        weekly[label].entries.push(t);
+        
+        if (t.type === "CREDIT") {
+          weekly[label].credit += t.amount;
+          weekly[label].sources[t.source] = (weekly[label].sources[t.source] || 0) + t.amount;
+        } else {
+          weekly[label].debit += t.amount;
+          weekly[label].sources[t.from] = (weekly[label].sources[t.from] || 0) - t.amount;
+        }
+      });
+
+      Object.values(weekly).forEach(w => {
+        w.credit = toMoney(w.credit);
+        w.debit = toMoney(w.debit);
+      });
+
+      return weekly;
+    }
+
+    function getMonthlyStats(year, monthIndex) {
+      let creditTotal = 0, debitTotal = 0, creditCount = 0, debitCount = 0;
+      const sources = {};
+
+      AppState.transactions.forEach(t => {
+        const d = new Date(t.date);
+        if (d.getFullYear() !== year || d.getMonth() !== monthIndex) return;
+
+        if (t.type === "CREDIT") {
+          creditTotal += t.amount;
+          creditCount++;
+          sources[t.source] = (sources[t.source] || 0) + t.amount;
+        } else {
+          debitTotal += t.amount;
+          debitCount++;
+          sources[t.from] = (sources[t.from] || 0) - t.amount;
+        }
+      });
+
+      return {
+        year, monthIndex,
+        creditTotal: toMoney(creditTotal),
+        debitTotal: toMoney(debitTotal),
+        creditCount, debitCount,
+        sources
+      };
+    }
+
+    function updateFilterSourceSelect() {
+      const select = document.getElementById('filterSource');
+      select.innerHTML = '<option value="">All Sources</option>';
+      
+      const allSources = new Set();
+      AppState.transactions.forEach(t => {
+        if (t.type === 'CREDIT') allSources.add(t.source);
+        else allSources.add(t.from);
+      });
+
+      Array.from(allSources).sort().forEach(source => {
+        const option = document.createElement('option');
+        option.value = source;
+        option.textContent = source;
+        select.appendChild(option);
+      });
+    }
+
+    function toggleDateFilter() {
+      const dateRow = document.getElementById('dateFilterRow');
+      dateRow.style.display = dateRow.style.display === 'none' ? 'flex' : 'none';
+    }
+
+    function applyFilters() {
+      const searchTerm = document.getElementById('searchBar').value.toLowerCase();
+      const filterSource = document.getElementById('filterSource').value;
+      const dateFrom = document.getElementById('filterDateFrom').value;
+      const dateTo = document.getElementById('filterDateTo').value;
+
+      filteredTransactions = AppState.transactions.filter(t => {
+        const matchesSearch = !searchTerm || 
+          (t.note && t.note.toLowerCase().includes(searchTerm)) ||
+          (t.source && t.source.toLowerCase().includes(searchTerm)) ||
+          (t.from && t.from.toLowerCase().includes(searchTerm));
+
+        const matchesSource = !filterSource ||
+          t.source === filterSource ||
+          t.from === filterSource;
+
+        const tDate = new Date(t.date).toISOString().split('T')[0];
+        const matchesDateFrom = !dateFrom || tDate >= dateFrom;
+        const matchesDateTo = !dateTo || tDate <= dateTo;
+
+        return matchesSearch && matchesSource && matchesDateFrom && matchesDateTo;
+      });
+
+      updateTransactionsList();
+    }
+
+    function updateTransactionsList() {
+      const container = document.getElementById("transactionsList");
+      const now = new Date();
+      
+      const transactionsToDisplay = filteredTransactions.length > 0 || 
+        document.getElementById('searchBar').value || 
+        document.getElementById('filterSource').value ||
+        document.getElementById('filterDateFrom').value ||
+        document.getElementById('filterDateTo').value
+        ? filteredTransactions 
+        : AppState.transactions;
+
+      if (transactionsToDisplay.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">📊</div>
+            <div>No transactions found.<br>${AppState.transactions.length === 0 ? 'Start by adding credit or debit!' : 'Try adjusting your filters.'}</div>
+          </div>
+        `;
+        return;
+      }
+
+      const weeks = {};
+      transactionsToDisplay.forEach(t => {
+        const d = new Date(t.date);
+        if (d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()) {
+          const label = getWeekLabel(d.getDate());
+          if (!weeks[label]) weeks[label] = { entries: [] };
+          weeks[label].entries.push(t);
+        }
+      });
+
+      let html = '';
+      ["Week 1", "Week 2", "Week 3", "Week 4", "Tail Days"].forEach(week => {
+        if (weeks[week] && weeks[week].entries.length > 0) {
+          html += `
+            <div class="week-section">
+              <div class="week-header">${week}</div>
+              ${weeks[week].entries.reverse().map(t => `
+                <div class="transaction-item">
+                  <div class="transaction-details">
+                    <div class="transaction-type ${t.type === 'CREDIT' ? 'credit-badge' : 'debit-badge'}">
+                      ${t.type}
+                    </div>
+                    <div class="transaction-note">
+                      ${t.note || (t.type === 'CREDIT' ? `From ${t.source}` : `To ${t.from}`)}
+                    </div>
+                    <div class="transaction-source">
+                      ${new Date(t.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                  </div>
+                  <div class="transaction-amount ${t.type === 'CREDIT' ? 'credit-amount' : 'debit-amount'}">
+                    ${t.type === 'CREDIT' ? '+' : '-'}₹${t.amount.toFixed(2)}
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          `;
+        }
+      });
+
+      container.innerHTML = html || `
+        <div class="empty-state">
+          <div class="empty-icon">📊</div>
+          <div>No transactions in current month.</div>
+        </div>
+      `;
+    }
+
+    function exportFilteredData() {
+      const transactionsToExport = filteredTransactions.length > 0 || 
+        document.getElementById('searchBar').value || 
+        document.getElementById('filterSource').value ||
+        document.getElementById('filterDateFrom').value ||
+        document.getElementById('filterDateTo').value
+        ? filteredTransactions 
+        : AppState.transactions;
+
+      if (transactionsToExport.length === 0) {
+        alert('No transactions to export!');
+        return;
+      }
+
+      let csvContent = "Type,Amount,Source/From,Note,Date\n";
+      transactionsToExport.forEach(t => {
+        const source = t.type === 'CREDIT' ? t.source : t.from;
+        const note = (t.note || '').replace(/,/g, ';');
+        csvContent += `${t.type},${t.amount},${source},"${note}",${new Date(t.date).toLocaleString('en-IN')}\n`;
+      });
+
+      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `transactions_${new Date().toISOString().split('T')[0]}.csv`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    }
+
+    function postTransactionCheck() {
+      const now = new Date();
+      const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      
+      if (now.getDate() === lastDay.getDate() && AppState.monthBuffer.length >= 2) {
+        runTwoMonthComparison();
+      }
+    }
+
+    function runTwoMonthComparison() {
+      const [mKey1, mKey2] = AppState.monthBuffer.slice(-2);
+      const m1 = buildMonthComparison(mKey1);
+      const m2 = buildMonthComparison(mKey2);
+      const winner = decideWinner(m1, m2);
+      announceWinner(m1, m2, winner);
+    }
+
+    function buildMonthComparison(monthKey) {
+      const [year, month] = monthKey.split("-").map(Number);
+      const stats = getMonthlyStats(year, month - 1);
+      const actualSaved = toMoney(stats.creditTotal - stats.debitTotal);
+      const aim = AppState.monthlyAim[monthKey] || 0;
+
+      return {
+        monthKey, ...stats, aim, actualSaved,
+        achieved: actualSaved >= aim
+      };
+    }
+
+    function decideWinner(m1, m2) {
+      if (m1.achieved !== m2.achieved) return m1.achieved ? m1 : m2;
+      if (m1.actualSaved !== m2.actualSaved) return m1.actualSaved > m2.actualSaved ? m1 : m2;
+      if (m1.debitCount !== m2.debitCount) return m1.debitCount < m2.debitCount ? m1 : m2;
+      return m1.creditTotal >= m2.creditTotal ? m1 : m2;
+    }
+
+    function announceWinner(m1, m2, winner) {
+      const loser = winner.monthKey === m1.monthKey ? m2 : m1;
+      alert(
+        `🏆 Best Month: ${winner.monthKey}\n\n` +
+        `Saved: ₹${winner.actualSaved} / ₹${winner.aim} (${winner.achieved ? 'Achieved ✓' : 'Not Achieved'})\n` +
+        `Credits: ${winner.creditCount}, Debits: ${winner.debitCount}\n\n` +
+        `😔 Other Month: ${loser.monthKey}\n` +
+        `Saved: ₹${loser.actualSaved} / ₹${loser.aim} (${loser.achieved ? 'Achieved ✓' : 'Not Achieved'})`
+      );
+    }
+
+    function updateStorageInfo() {
+      const appBytes = new Blob([JSON.stringify(AppState)]).size;
+      const appKB = (appBytes / 1024).toFixed(2);
+      
+      if (navigator.storage && navigator.storage.estimate) {
+        navigator.storage.estimate().then(({ quota, usage }) => {
+          const freeGB = ((quota - usage) / 1e9).toFixed(2);
+          document.getElementById("storageInfo").textContent = 
+            `App Data: ${appKB} KB | Free Storage: ${freeGB} GB`;
+        });
+      } else {
+        document.getElementById("storageInfo").textContent = 
+          `App Data: ${appKB} KB`;
+      }
+    }
+
+    initApp();
+  </script>
+</body>
+</html>
