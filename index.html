@@ -1,6 +1,7 @@
 
 
 
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -191,21 +192,46 @@ if ("serviceWorker" in navigator) {
     }
 
     .balance-section {
-      margin-top: 10px;
-    }
+  margin-top: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 15px;
+}
 
-    .balance-label {
-      font-size: 12px;
-      font-weight: 500;
-      color: rgba(255, 255, 255, 0.8);
-      margin-bottom: 3px;
-    }
+.balance-item {
+  flex: 1;
+}
 
-    .balance-amount {
-      font-size: 32px;
-      font-weight: 700;
-      color: white;
-    }
+.balance-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 3px;
+}
+
+.balance-amount {
+  font-size: 32px;
+  font-weight: 700;
+  color: white;
+}
+
+.saving-target {
+  text-align: right;
+}
+
+.target-amount {
+  font-size: 24px;
+  font-weight: 700;
+  color: #fbbf24;
+}
+
+.target-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 3px;
+}
 
     .action-buttons {
       display: flex;
@@ -696,15 +722,21 @@ if ("serviceWorker" in navigator) {
   </div>
 
   <div class="header">
-    <div class="header-top">
-      <div class="user-name" id="userName">Hi, User!</div>
-      <div class="current-date" id="currentDate"></div>
-    </div>
-    <div class="balance-section">
+  <div class="header-top">
+    <div class="user-name" id="userName">Hi, User!</div>
+    <div class="current-date" id="currentDate"></div>
+  </div>
+  <div class="balance-section">
+    <div class="balance-item">
       <div class="balance-label">Current Balance</div>
       <div class="balance-amount" id="currentBalance">₹0.00</div>
     </div>
+    <div class="balance-item saving-target">
+      <div class="target-label">Monthly Target</div>
+      <div class="target-amount" id="savingTarget">₹0</div>
+    </div>
   </div>
+</div>
 
   <div class="action-buttons">
     <button class="action-btn credit-btn" onclick="openCreditModal()">
@@ -1080,7 +1112,11 @@ if ("serviceWorker" in navigator) {
     function updateUI() {
       document.getElementById("userName").textContent = `Hi, ${AppState.user.firstName}!`;
       document.getElementById("currentBalance").textContent = `₹${AppState.user.balance.toFixed(2)}`;
-      
+      const now = new Date();
+      const currentMonthKey = getMonthKey(now);
+      const target = AppState.monthlyAim[currentMonthKey] || 0;
+      document.getElementById("savingTarget").textContent = `₹${target.toFixed(2)}`;
+  
       updateInsights();
       updateTransactionsList();
       updateFilterSourceSelect();
