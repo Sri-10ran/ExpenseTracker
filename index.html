@@ -221,9 +221,9 @@ if ("serviceWorker" in navigator) {
 }
 
 .target-amount {
-  font-size: 24px;
+  font-size: 32px;
   font-weight: 700;
-  color: #fbbf24;
+  color: white;
 }
 
 .target-label {
@@ -234,12 +234,20 @@ if ("serviceWorker" in navigator) {
 }
 
     .action-buttons {
-      display: flex;
-      gap: 10px;
+     position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background: #1e293b;
       padding: 15px;
-      background: #0f172a;
+      z-index: 900;
+      box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
     }
-
+ .button-row {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 10px;
+    }
     .action-btn {
       flex: 1;
       padding: 15px;
@@ -256,13 +264,13 @@ if ("serviceWorker" in navigator) {
     }
 
     .credit-btn {
-      background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+       background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
       color: white;
       box-shadow: 0 4px 15px rgba(34, 197, 94, 0.3);
     }
 
     .debit-btn {
-      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+       background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
       color: white;
       box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
     }
@@ -359,31 +367,29 @@ if ("serviceWorker" in navigator) {
       transform: scale(0.98);
     }
 
-    .tabs {
-      display: flex;
-      padding: 15px;
-      background: #0f172a;
-      gap: 10px;
-    }
 
-    .tab {
-      flex: 1;
-      padding: 12px;
-      text-align: center;
-      border-radius: 12px;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      font-weight: 600;
-      font-size: 14px;
-      background: #1e293b;
-      color: #94a3b8;
-    }
+.tabs {
+  display: flex;
+  background: #1e293b;
+  border-bottom: 2px solid #334155;
+}
 
-    .tab.active {
-      background: linear-gradient(135deg, #00d084 0%, #00a86b 100%);
-      color: white;
-      box-shadow: 0 4px 10px rgba(0, 208, 132, 0.3);
-    }
+.tab {
+  flex: 1;
+  padding: 15px;
+  text-align: center;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 15px;
+  color: #94a3b8;
+  border-bottom: 3px solid transparent;
+  transition: all 0.3s ease;
+}
+
+.tab.active {
+  color: #00d084;
+  border-bottom-color: #00d084;
+}
 
     .view-selector {
       padding: 15px;
@@ -634,12 +640,9 @@ if ("serviceWorker" in navigator) {
     }
 
     .storage-info {
-      background: #1e293b;
-      border-radius: 15px;
-      padding: 15px;
-      margin: 15px;
+      padding: 8px 12px;
       text-align: center;
-      font-size: 11px;
+      font-size: 10px;
       color: #94a3b8;
     }
 
@@ -738,14 +741,14 @@ if ("serviceWorker" in navigator) {
   </div>
 </div>
 
-  <div class="action-buttons">
+  <!-- <div class="action-buttons">
     <button class="action-btn credit-btn" onclick="openCreditModal()">
       <span>➕</span> Add Credit
     </button>
     <button class="action-btn debit-btn" onclick="openDebitModal()">
       <span>➖</span> Add Debit
     </button>
-  </div>
+  </div> -->
 
   <div class="tabs">
     <div class="tab active" onclick="switchTab('insights')">Insights</div>
@@ -781,6 +784,7 @@ if ("serviceWorker" in navigator) {
     <div class="source-breakdown" id="sourceBreakdown"></div>
   </div>
 
+
   <div id="transactionsView" style="display: none;">
     <div class="search-filter-section">
       <input type="text" class="search-bar" id="searchBar" placeholder="🔍 Search by note or source..." onkeyup="applyFilters()">
@@ -803,7 +807,7 @@ if ("serviceWorker" in navigator) {
     <div class="transaction-list" id="transactionsList"></div>
   </div>
 
-  <div class="storage-info" id="storageInfo">Calculating storage...</div>
+  <!-- <div class="storage-info pb-5" id="storageInfo">Calculating storage...</div> -->
 
   <div class="modal-overlay" id="modalOverlay" onclick="closeModals()"></div>
 
@@ -856,6 +860,19 @@ if ("serviceWorker" in navigator) {
     <input type="text" class="modal-input" id="debitNote" placeholder="What did you spend on?">
     <button class="submit-btn" onclick="submitDebit()">Add Debit</button>
   </div>
+
+  <div class="action-buttons">
+    <div class="button-row">
+    <button class="action-btn credit-btn" onclick="openCreditModal()">
+      <span></span> Add Credit
+    </button>
+    <button class="action-btn debit-btn" onclick="openDebitModal()">
+      <span></span> Add Debit
+    </button>
+</div>
+    <div class="storage-info" id="storageInfo">Calculating storage...</div>
+  </di>
+  
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
