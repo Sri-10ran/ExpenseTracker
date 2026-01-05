@@ -3,8 +3,6 @@ const urlsToCache = [
   '/',
   '/index.html',
   '/manifest.json',
-  '/icon-192.png',
-  '/icon-512.png',
   'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap',
   'https://cdn.jsdelivr.net/npm/chart.js'
 ];
@@ -68,3 +66,4 @@ self.addEventListener('activate', event => {
     })
   );
 });
+
